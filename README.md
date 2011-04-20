@@ -12,4 +12,5 @@ Requirements
 
  * libevent (obviously)
  * mhash library
+ * scons build tool
 
