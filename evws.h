@@ -1,16 +1,15 @@
+/*
+ * Author: Pawel Zubrycki <paw.zubr@gmail.com>
+ */
+
 #ifndef EVWS_H
 #define EVWS_H
 
 #include <event2/event.h>
 #include <event2/bufferevent.h>
 #include <event2/listener.h>
+#include <sys/queue.h>
 #include "utils.h"
-
-enum request_types{
-	EVWS_REQ_GET,
-	EVWS_REQ_UNKNOWN = -1
-};
-
 
 struct evws_header
 {

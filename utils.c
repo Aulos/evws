@@ -1,3 +1,7 @@
+/*
+ * Author: Pawel Zubrycki <paw.zubr@gmail.com>
+ */
+
 #include <mhash.h>
 #include "utils.h"
 

@@ -1,6 +1,9 @@
+/*
+ * Author: Pawel Zubrycki <paw.zubr@gmail.com>
+ */
+
 #include "evws.h"
 #include "utils.h"
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <event2/buffer.h>
@@ -206,13 +209,11 @@ void cb_read_handshake(struct bufferevent *bev, void *arg)
 
 			free(line);
 		}
-		printf("Ola1!\n");
 	case 2:
 		{
 			int n = evbuffer_remove(buffer, key3, sizeof(key3)-1);
 			key3[n] = '\0';
 			ws_conn->state = 3;
-			printf("Ola2! %d\n", n);
 			break;
 		}
 	case 3:
@@ -226,12 +227,10 @@ void cb_read_handshake(struct bufferevent *bev, void *arg)
 	host = evws_find_header(&ws_conn->headers, "Host");
 	origin = evws_find_header(&ws_conn->headers, "Origin");
 	gen_md5(key1, key2, key3, chksum); 
-	printf("Ola3: %s\n", ws_conn->protocol);
 	{
 		char location[255] = "ws://";
 		strcpy(&(location[5]), host);
 		strcpy(&(location[5+strlen(host)]), ws_conn->uri);
-		printf("%s\n", location);
 		evbuffer_add_printf(bufferevent_get_output(ws_conn->bufev), 
 			"HTTP/1.1 101 WebSocket Protocol Handshake\r\n"
 			"Upgrade: WebSocket\r\n"
@@ -273,7 +272,6 @@ void cb_read(struct bufferevent *bev, void *arg)
 	if(n > 0){
 		struct evws_cb *ws_cb;
 		readbuf[n-1] = '\0';
-		//printf("Got: %s\n", readbuf+1);
 		TAILQ_FOREACH(ws_cb, &ws->callbacks, next) {
 			if (strcmp(ws_cb->uri, conn->uri) == 0) {
 				ws_cb->cb(conn, readbuf+1, ws_cb->cb_arg);

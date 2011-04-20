@@ -26,6 +26,7 @@ env = conf.Finish()
 lib = env.StaticLibrary(target = lib_target, source = lib_src, LIBS = common_libs)
 
 env.Install('/usr/local/lib', lib)
+env.Install('/usr/local/include', 'evws.h')
 
 env.Alias('library', [lib_src])
-env.Alias('install', ['/usr/local/lib'])
+env.Alias('install', ['/usr/local/lib', '/usr/local/include'])
