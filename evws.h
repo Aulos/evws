@@ -9,7 +9,11 @@
 #include <event2/bufferevent.h>
 #include <event2/listener.h>
 #include <sys/queue.h>
-#include "utils.h"
+#include <stdint.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 struct evws_header
 {
@@ -72,5 +76,9 @@ int evws_set_cb(struct evws * ws, const char * pattern, cb_type cb, void * arg);
 cb_type evws_set_gencb(struct evws *ws, cb_type cb, void * arg);
 void evws_broadcast_data(struct evws *ws, const char *pattern, void *data);
 void evws_send_data(struct evws_connection *conn, char *data);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
