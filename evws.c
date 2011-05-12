@@ -85,10 +85,6 @@ cb_type evws_set_gencb(struct evws *ws, cb_type cb, void * arg)
 // Broadcast data to all buffers associated with pattern
 void evws_broadcast(struct evws *ws, const char *uri, void *data)
 {
-	/* Przeiteruj po liscie polaczen
-	znajdz takie gdzie uri == pattern
-	wyslij dla nich data
-	*/
 	struct evws_connection *ws_connection;
 	TAILQ_FOREACH(ws_connection, &ws->connections, next) {
 		if (strcmp(ws_connection->uri, uri) == 0)
@@ -247,6 +243,8 @@ void cb_read_handshake(struct bufferevent *bev, void *arg)
 		);
 	}
 	bufferevent_setcb(ws_conn->bufev, cb_read, NULL, NULL, ws_conn);
+
+	TAILQ_INSERT_TAIL(&(ws_conn->ws->connections), ws_conn, next);
 }
 
 int evws_parse_header_line(char *line, char **skey, char **svalue)
