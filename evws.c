@@ -52,7 +52,7 @@ void evws_bind_socket(struct evws * ws, unsigned short port)
 	}
 }
 
-int evws_set_cb(struct evws * ws, const char * uri, cb_type cb, void * arg)
+int evws_set_cb(struct evws * ws, const char * uri, cb_type message_cb, cb_type connect_cb, void * arg)
 {
 	struct evws_cb *ws_cb;
 
@@ -66,7 +66,8 @@ int evws_set_cb(struct evws * ws, const char * uri, cb_type cb, void * arg)
 	}
 
 	ws_cb->uri = (char*)strdup(uri);
-	ws_cb->cb = cb;
+	ws_cb->msg_cb = message_cb;
+	ws_cb->conn_cb = connect_cb;
 	ws_cb->cb_arg = arg;
 
 	TAILQ_INSERT_TAIL(&ws->callbacks, ws_cb, next);
@@ -245,6 +246,16 @@ void cb_read_handshake(struct bufferevent *bev, void *arg)
 	bufferevent_setcb(ws_conn->bufev, cb_read, NULL, NULL, ws_conn);
 
 	TAILQ_INSERT_TAIL(&(ws_conn->ws->connections), ws_conn, next);
+	{
+		struct evws_cb *ws_cb;
+		TAILQ_FOREACH(ws_cb, &ws_conn->ws->callbacks, next) {
+			if (strcmp(ws_cb->uri, ws_conn->uri) == 0) {
+				if(ws_cb->conn_cb != NULL)
+					ws_cb->conn_cb(ws_conn, NULL, ws_cb->cb_arg);
+				return;
+			}
+		}
+	}
 }
 
 int evws_parse_header_line(char *line, char **skey, char **svalue)
@@ -272,7 +283,8 @@ void cb_read(struct bufferevent *bev, void *arg)
 		readbuf[n-1] = '\0';
 		TAILQ_FOREACH(ws_cb, &ws->callbacks, next) {
 			if (strcmp(ws_cb->uri, conn->uri) == 0) {
-				ws_cb->cb(conn, readbuf+1, ws_cb->cb_arg);
+				if(ws_cb->msg_cb != NULL)
+					ws_cb->msg_cb(conn, readbuf+1, ws_cb->cb_arg);
 				return;
 			}
 		}

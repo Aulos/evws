@@ -45,7 +45,8 @@ struct evws_cb
 {
 	TAILQ_ENTRY(evws_cb) next;
 	char * uri;
-	cb_type cb;
+	cb_type msg_cb;
+	cb_type conn_cb;
 	void * cb_arg;
 };
 
@@ -72,7 +73,7 @@ struct evws
 struct evws *evws_new(struct event_base *base);
 void evws_free(struct evws *ptr);
 void evws_bind_socket(struct evws * ws, unsigned short port);
-int evws_set_cb(struct evws * ws, const char * pattern, cb_type cb, void * arg);
+int evws_set_cb(struct evws * ws, const char * pattern, cb_type message_cb, cb_type connect_cb, void * arg);
 cb_type evws_set_gencb(struct evws *ws, cb_type cb, void * arg);
 void evws_broadcast(struct evws *ws, const char *pattern, void *data);
 void evws_send_data(struct evws_connection *conn, char *data);
