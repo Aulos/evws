@@ -84,7 +84,7 @@ cb_type evws_set_gencb(struct evws *ws, cb_type cb, void * arg)
 }
 
 // Broadcast data to all buffers associated with pattern
-void evws_broadcast(struct evws *ws, const char *uri, void *data)
+void evws_broadcast(struct evws *ws, const char *uri, const char *data)
 {
 	struct evws_connection *ws_connection;
 	TAILQ_FOREACH(ws_connection, &ws->connections, next) {
@@ -93,7 +93,7 @@ void evws_broadcast(struct evws *ws, const char *uri, void *data)
 	}
 }
 
-void evws_send_data(struct evws_connection *conn, char *data)
+void evws_send_data(struct evws_connection *conn, const char *data)
 {
 	char tmp[255] = {0x00};
 	strcpy(tmp+1, data);

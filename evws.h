@@ -75,8 +75,8 @@ void evws_free(struct evws *ptr);
 void evws_bind_socket(struct evws * ws, unsigned short port);
 int evws_set_cb(struct evws * ws, const char * pattern, cb_type message_cb, cb_type connect_cb, void * arg);
 cb_type evws_set_gencb(struct evws *ws, cb_type cb, void * arg);
-void evws_broadcast(struct evws *ws, const char *pattern, void *data);
-void evws_send_data(struct evws_connection *conn, char *data);
+void evws_broadcast(struct evws *ws, const char *pattern, const char *data);
+void evws_send_data(struct evws_connection *conn, const char *data);
 
 #ifdef __cplusplus
 }
