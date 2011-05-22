@@ -47,7 +47,7 @@ void evws_bind_socket(struct evws * ws, unsigned short port)
 	sin.sin_addr.s_addr = htonl(0);
 	sin.sin_port = htons(port);
 
-	if(!(ws->listener = evconnlistener_new_bind(ws->base, cb_accept, ws, LEV_OPT_CLOSE_ON_FREE|LEV_OPT_REUSEABLE, -1, (struct sockaddr*)&sin, sizeof(sin)))) {
+	if(!(ws->listener = evconnlistener_new_bind(ws->base, cb_accept, ws, LEV_OPT_CLOSE_ON_FREE|LEV_OPT_REUSEABLE|LEV_OPT_THREADSAFE, -1, (struct sockaddr*)&sin, sizeof(sin)))) {
 		return;
 	}
 }
