@@ -12,5 +12,10 @@ Requirements
 
 Author
 ======
+
 Paweł Zubrycki (aka Aulos)
 
+License
+=======
+
+FreeBSD (license file FreeBSD.txt)
