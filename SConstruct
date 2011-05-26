@@ -8,6 +8,9 @@ lib_target = 'libs/evws'
 
 env = Environment(ENV = os.environ, LIBPATH = './libs/')
 
+if ARGUMENTS.get('debug', 0):
+	env.Append(CCFLAGS=['-g'])
+
 # configuring
 conf = Configure(env)
 

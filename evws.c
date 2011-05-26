@@ -14,10 +14,9 @@ static int evws_parse_first_line(struct evws_connection *conn, char *line);
 static int evws_parse_header_line(char *line, char **skey, char **svalue);
 
 // Callbacks
-void cb_accept(struct evconnlistener *listener, evutil_socket_t fd, struct sockaddr *address, int socklen, void *ctx); 
-void cb_accept_error(evutil_socket_t fd, short what, void *arg);
-void cb_read_handshake(struct bufferevent *bev, void *arg);
-void cb_read(struct bufferevent *bev, void *arg);
+static void cb_accept(struct evconnlistener *listener, evutil_socket_t fd, struct sockaddr *address, int socklen, void *ctx); 
+static void cb_read_handshake(struct bufferevent *bev, void *arg);
+static void cb_read(struct bufferevent *bev, void *arg);
 
 struct evws *evws_new(struct event_base *base)
 {
@@ -136,13 +135,21 @@ void gen_md5(const char *k1, const char *k2, const char *k3, char *out)
 	out[16] = '\0';
 }
 
+// Error callback
+static void cb_error(struct bufferevent *bev, short what, void *ctx)
+{
+	struct evws_connection *conn = ctx;
+	TAILQ_REMOVE(&(conn->ws->connections), conn, next);
+	evws_connection_free(conn);
+}
+
 //Callback to accept
-void cb_accept(struct evconnlistener *listener, evutil_socket_t fd, struct sockaddr *address, int socklen, void *arg)
+static void cb_accept(struct evconnlistener *listener, evutil_socket_t fd, struct sockaddr *address, int socklen, void *arg)
 {
 	struct evws *ws = arg;
 	struct evws_connection *ws_conn = evws_connection_new(ws, fd);
 	
-	bufferevent_setcb(ws_conn->bufev, cb_read_handshake, NULL, NULL, ws_conn);
+	bufferevent_setcb(ws_conn->bufev, cb_read_handshake, NULL, cb_error, ws_conn);
 	bufferevent_enable(ws_conn->bufev, EV_READ);
 }
 
@@ -243,7 +250,7 @@ void cb_read_handshake(struct bufferevent *bev, void *arg)
 			chksum
 		);
 	}
-	bufferevent_setcb(ws_conn->bufev, cb_read, NULL, NULL, ws_conn);
+	bufferevent_setcb(ws_conn->bufev, cb_read, NULL, cb_error, ws_conn);
 
 	TAILQ_INSERT_TAIL(&(ws_conn->ws->connections), ws_conn, next);
 	{
