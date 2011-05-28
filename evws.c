@@ -94,11 +94,12 @@ void evws_broadcast(struct evws *ws, const char *uri, const char *data)
 
 void evws_send_data(struct evws_connection *conn, const char *data)
 {
-	char tmp[255] = {0x00};
+	char *tmp = calloc(strlen(data)+2, sizeof(char));
 	strcpy(tmp+1, data);
 	tmp[strlen((char*)data)+1] = 0xFF;
 	struct evbuffer *buffer =  bufferevent_get_output(conn->bufev);
 	evbuffer_add(buffer, tmp, strlen((char*)data)+2);
+	free(tmp);
 }
 
 void gen_md5(const char *k1, const char *k2, const char *k3, char *out) 
@@ -131,7 +132,7 @@ void gen_md5(const char *k1, const char *k2, const char *k3, char *out)
 	memcpy(buf + 8, k3, 8);
 	buf[16] = '\0';
 
-	md5_buffer(buf, (uint8_t*)out);
+	md5(buf, 16, out);
 	out[16] = '\0';
 }
 
@@ -186,7 +187,7 @@ void cb_read_handshake(struct bufferevent *bev, void *arg)
 	char *line, *skey, *svalue;
 	struct evbuffer *buffer = bufferevent_get_input(bev);
 	size_t line_length;
-	const char *key1, *key2, *host, *origin, *proto;
+	char *key1, *key2, *host, *origin, *proto;
 	char key3[21], chksum[17];
 
 	switch(ws_conn->state) {
@@ -206,9 +207,18 @@ void cb_read_handshake(struct bufferevent *bev, void *arg)
 			evws_parse_header_line(line, &skey, &svalue);
 			if(strcmp(skey, "Sec-WebSocket-Protocol") == 0) {
 				ws_conn->protocol = strdup(svalue);
+			}else if(strcmp(skey, "Sec-WebSocket-Key1") == 0) {
+				key1 = strdup(svalue);
+			}else if(strcmp(skey, "Sec-WebSocket-Key2") == 0) {
+				key2 = strdup(svalue);
+			}else if(strcmp(skey, "Host") == 0) {
+				host = strdup(svalue);
+			}else if(strcmp(skey, "Origin") == 0) {
+				origin = strdup(svalue);
 			}else{ 
-				struct evws_header *header = evws_header_new(skey, svalue);
-				TAILQ_INSERT_TAIL(&ws_conn->headers, header, next);
+				//printf("Adding header: %s => %s\n", skey, svalue);
+				//struct evws_header *header = evws_header_new(skey, svalue);
+				//TAILQ_INSERT_TAIL(&ws_conn->headers, header, next);
 			}
 
 			free(line);
@@ -226,15 +236,18 @@ void cb_read_handshake(struct bufferevent *bev, void *arg)
 		break;
 	};
 
-	key1 = evws_find_header(&ws_conn->headers, "Sec-WebSocket-Key1");
-	key2 = evws_find_header(&ws_conn->headers, "Sec-WebSocket-Key2");
-	host = evws_find_header(&ws_conn->headers, "Host");
-	origin = evws_find_header(&ws_conn->headers, "Origin");
+	//key1 = evws_find_header(&ws_conn->headers, "Sec-WebSocket-Key1");
+	//key2 = evws_find_header(&ws_conn->headers, "Sec-WebSocket-Key2");
+	//host = evws_find_header(&ws_conn->headers, "Host");
+	//origin = evws_find_header(&ws_conn->headers, "Origin");
 	gen_md5(key1, key2, key3, chksum); 
+	free(key1);
+	free(key2);
 	{
 		char location[255] = "ws://";
 		strcpy(&(location[5]), host);
 		strcpy(&(location[5+strlen(host)]), ws_conn->uri);
+		free(host);
 		evbuffer_add_printf(bufferevent_get_output(ws_conn->bufev), 
 			"HTTP/1.1 101 WebSocket Protocol Handshake\r\n"
 			"Upgrade: WebSocket\r\n"
@@ -249,6 +262,7 @@ void cb_read_handshake(struct bufferevent *bev, void *arg)
 			(ws_conn->protocol != NULL) ? ws_conn->protocol : "",
 			chksum
 		);
+		free(origin);
 	}
 	bufferevent_setcb(ws_conn->bufev, cb_read, NULL, cb_error, ws_conn);
 
@@ -304,6 +318,9 @@ struct evws_connection *evws_connection_new(struct evws *ws, evutil_socket_t fd)
 	struct evws_connection *conn = calloc(1, sizeof(struct evws_connection));
 	conn->ws = ws;
 	conn->fd = fd;
+	conn->uri = NULL;
+	conn->protocol = NULL;
+
 	conn->bufev = bufferevent_socket_new(ws->base, fd, BEV_OPT_CLOSE_ON_FREE);
 	conn->state = 0; // Read first line
 	TAILQ_INIT(&conn->headers);
@@ -314,11 +331,14 @@ void evws_connection_free(struct evws_connection *conn)
 {
 	struct evws_header *header;
 	bufferevent_free(conn->bufev);
-	free(conn->uri);
-	free(conn->protocol);
-	TAILQ_FOREACH(header, &conn->headers, next) {
+	if(conn->uri != NULL)
+		free(conn->uri);
+	if(conn->protocol != NULL)
+		free(conn->protocol);
+
+/*	TAILQ_FOREACH(header, &conn->headers, next) {
 		evws_header_free(header);
-	}
+	}*/
 	free(conn);
 }
 
@@ -332,8 +352,11 @@ struct evws_header *evws_header_new(char *key, char *value)
 
 void evws_header_free(struct evws_header *header)
 {
-	free(header->key);
-	free(header->value);
+	if(header->key != NULL)
+		free(header->key);
+	// @Note: segfault when freeing value, some strange value
+	if(header->value != NULL)
+		free(header->value);
 	free(header);
 }
 
