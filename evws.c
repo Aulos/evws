@@ -95,6 +95,9 @@ void evws_broadcast(struct evws *ws, const char *uri, const char *data)
 void evws_send_data(struct evws_connection *conn, const char *data)
 {
 	char *tmp = calloc(strlen(data)+2, sizeof(char));
+	if(tmp == NULL)
+		return;
+
 	strcpy(tmp+1, data);
 	tmp[strlen((char*)data)+1] = 0xFF;
 	struct evbuffer *buffer =  bufferevent_get_output(conn->bufev);
@@ -244,20 +247,17 @@ void cb_read_handshake(struct bufferevent *bev, void *arg)
 	free(key1);
 	free(key2);
 	{
-		char location[255] = "ws://";
-		strcpy(&(location[5]), host);
-		strcpy(&(location[5+strlen(host)]), ws_conn->uri);
 		free(host);
 		evbuffer_add_printf(bufferevent_get_output(ws_conn->bufev), 
 			"HTTP/1.1 101 WebSocket Protocol Handshake\r\n"
 			"Upgrade: WebSocket\r\n"
 			"Connection: Upgrade\r\n"
 			"Sec-WebSocket-Origin: %s\r\n"
-			"Sec-WebSocket-Location: %s"
+			"Sec-WebSocket-Location: ws://%s%s"
 			"%s%s\r\n"
 			"\r\n"
 			"%s", 
-			origin, location,
+			origin, host, ws_conn->uri,
 			(ws_conn->protocol != NULL) ? "\r\nSec-WebSocket-Protocol: " : "",
 			(ws_conn->protocol != NULL) ? ws_conn->protocol : "",
 			chksum

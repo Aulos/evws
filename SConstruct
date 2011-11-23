@@ -1,6 +1,6 @@
 import os
 
-common_libs = Split('event mhash')
+common_libs = Split('event')
 lib_src = Split("""
 	evws.c
 	utils.c""")
